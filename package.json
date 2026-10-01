@@ -1,0 +1,9 @@
+{
+  "name": "quest-log",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "test": "npm run test -w @questlog/engine",
+    "typecheck": "npm run typecheck -w @questlog/engine"
+  }
+}
