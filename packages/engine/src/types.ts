@@ -9,6 +9,14 @@ export interface HeroState {
   lastActiveDate: string | null;
 }
 
+export interface BossState {
+  id: string;
+  title: string;
+  maxHp: number;
+  hp: number;
+  defeated: boolean;
+}
+
 export type GameEvent = {
   type: 'QUEST_COMPLETED';
   difficulty: Difficulty;
@@ -19,4 +27,6 @@ export type GameEvent = {
 export type Reward =
   | { type: 'xp_gained'; amount: number }
   | { type: 'level_up'; level: number }
-  | { type: 'streak_updated'; streak: number };
+  | { type: 'streak_updated'; streak: number }
+  | { type: 'boss_damaged'; bossId: string; damage: number; hp: number }
+  | { type: 'boss_defeated'; bossId: string };
