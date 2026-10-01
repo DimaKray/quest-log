@@ -1,0 +1,118 @@
+// Палітра
+$outline: #1a1330;
+$bg-deep: #150d2b;
+$bg-panel: #241844;
+$card: #f3e6c4;
+$text-light: #f3e6c4;
+$xp-gold: #e8b030;
+$streak: #e8783a;
+$hp-coral: #ee6a55;
+$success: #7fcfa0;
+$muted: #7a5a8c;
+
+:root {
+  --outline: #{$outline};
+  --bg-deep: #{$bg-deep};
+  --bg-panel: #{$bg-panel};
+  --card: #{$card};
+  --xp-gold: #{$xp-gold};
+  --streak: #{$streak};
+  --hp-coral: #{$hp-coral};
+  --success: #{$success};
+  --muted: #{$muted};
+}
+
+// Піксельна рамка з жорсткою тінню
+@mixin pixel-border($color: $outline, $size: 4px) {
+  border: $size solid $color;
+  box-shadow: $size $size 0 $color;
+}
+
+body {
+  background: $bg-deep;
+  color: $text-light;
+  font-family: var(--font-body), monospace;
+  font-size: 18px;
+  image-rendering: pixelated;
+}
+
+h1, h2, h3, .font-pixel {
+  font-family: var(--font-pixel), monospace;
+  line-height: 1.5;
+}
+
+.pixel-card {
+  @include pixel-border;
+  background: $card;
+  color: $outline;
+  padding: 16px;
+}
+
+.pixel-panel {
+  @include pixel-border;
+  background: $bg-panel;
+  padding: 16px;
+}
+
+.pixel-btn {
+  @include pixel-border;
+  background: $xp-gold;
+  color: $outline;
+  font-family: var(--font-pixel), monospace;
+  font-size: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 $outline;
+  }
+
+  &:disabled {
+    background: $muted;
+    cursor: default;
+    opacity: 0.7;
+  }
+}
+
+.pixel-input {
+  @include pixel-border;
+  background: $card;
+  color: $outline;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.xp-bar {
+  @include pixel-border;
+  height: 24px;
+  background: $bg-deep;
+
+  &__fill {
+    height: 100%;
+    background: repeating-linear-gradient(90deg, $xp-gold 0 8px, #f5cc5a 8px 16px);
+    transition: width 0.4s steps(8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-bar__fill { transition: none; }
+  .pixel-btn:hover:not(:disabled) { transform: none; }
+}
+
+.hp-bar {
+  @include pixel-border;
+  height: 24px;
+  background: $bg-deep;
+
+  &__fill {
+    height: 100%;
+    background: repeating-linear-gradient(90deg, $hp-coral 0 8px, #f58a78 8px 16px);
+    transition: width 0.4s steps(8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-bar__fill { transition: none; }
+}

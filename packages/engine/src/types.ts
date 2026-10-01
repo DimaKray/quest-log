@@ -17,6 +17,25 @@ export interface BossState {
   defeated: boolean;
 }
 
+export const ACHIEVEMENT_IDS = [
+  'first_quest',
+  'ten_in_a_day',
+  'streak_7',
+  'first_boss',
+  'level_10',
+] as const;
+
+export type AchievementId = (typeof ACHIEVEMENT_IDS)[number];
+
+/** Лічильники, з яких обчислюються досягнення. */
+export interface Stats {
+  totalQuests: number;
+  bossesDefeated: number;
+  /** Скільки квестів виконано за останню активну дату */
+  today: { date: string | null; count: number };
+  unlocked: AchievementId[];
+}
+
 export type GameEvent = {
   type: 'QUEST_COMPLETED';
   difficulty: Difficulty;
@@ -29,4 +48,5 @@ export type Reward =
   | { type: 'level_up'; level: number }
   | { type: 'streak_updated'; streak: number }
   | { type: 'boss_damaged'; bossId: string; damage: number; hp: number }
-  | { type: 'boss_defeated'; bossId: string };
+  | { type: 'boss_defeated'; bossId: string }
+  | { type: 'achievement_unlocked'; id: AchievementId };
