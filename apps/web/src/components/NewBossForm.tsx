@@ -2,20 +2,25 @@
 
 import { useState } from "react";
 import { XP_BY_DIFFICULTY, type Difficulty } from "@questlog/engine";
+import { BOSSES, BOSS_IDS, type BossArtId } from "@/assets/registry";
 import { DIFFICULTY_LABEL } from "@/lib/types";
+import { Sprite } from "./Sprite";
 
 export interface QuestDraft {
   title: string;
   difficulty: Difficulty;
 }
 
+const DEFAULT_ART: BossArtId = "deadline_dragon";
+
 export function NewBossForm({
   onCreate,
 }: {
-  onCreate: (title: string, drafts: QuestDraft[]) => void;
+  onCreate: (title: string, drafts: QuestDraft[], art: BossArtId) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [bossTitle, setBossTitle] = useState("");
+  const [art, setArt] = useState<BossArtId>(DEFAULT_ART);
   const [drafts, setDrafts] = useState<QuestDraft[]>([]);
   const [qTitle, setQTitle] = useState("");
   const [qDiff, setQDiff] = useState<Difficulty>("medium");
@@ -43,6 +48,7 @@ export function NewBossForm({
   function close() {
     setOpen(false);
     setBossTitle("");
+    setArt(DEFAULT_ART);
     setDrafts([]);
     setQTitle("");
   }
@@ -50,7 +56,7 @@ export function NewBossForm({
   function submit() {
     const title = bossTitle.trim();
     if (!title || drafts.length === 0) return;
-    onCreate(title, drafts);
+    onCreate(title, drafts, art);
     close();
   }
 
@@ -64,6 +70,28 @@ export function NewBossForm({
         value={bossTitle}
         onChange={(e) => setBossTitle(e.target.value)}
       />
+
+      <div
+        role="radiogroup"
+        aria-label="Вигляд боса"
+        className="flex flex-wrap gap-1"
+      >
+        {BOSS_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={art === id}
+            aria-label={BOSSES[id].name}
+            title={BOSSES[id].name}
+            className={`boss-option ${art === id ? "is-selected" : ""}`}
+            onClick={() => setArt(id)}
+          >
+            <Sprite sprite={BOSSES[id].sprite} />
+          </button>
+        ))}
+      </div>
+      <p className="opacity-70">Обрано: {BOSSES[art].name}</p>
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <input

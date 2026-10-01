@@ -1,0 +1,26 @@
+{
+ "night": {
+  "sky": "#19102b",
+  "cloud": "#2b163f",
+  "sky_L": 6.8,
+  "cloud_dL": 5.5
+ },
+ "dawn": {
+  "sky": "#815870",
+  "cloud": "#9d626e",
+  "sky_L": 42.5,
+  "cloud_dL": 5.8
+ },
+ "day": {
+  "sky": "#486f6e",
+  "cloud": "#567e76",
+  "sky_L": 44.0,
+  "cloud_dL": 5.7
+ },
+ "evening": {
+  "sky": "#673f53",
+  "cloud": "#82484c",
+  "sky_L": 32.0,
+  "cloud_dL": 5.7
+ }
+}

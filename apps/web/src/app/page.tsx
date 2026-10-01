@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   completeQuest,
   createBoss,
@@ -10,39 +10,70 @@ import {
   type Difficulty,
   type GameState,
 } from "@questlog/engine";
+import { AchievementsPanel } from "@/components/AchievementsPanel";
 import { BossCard } from "@/components/BossCard";
 import { NewBossForm, type QuestDraft } from "@/components/NewBossForm";
+import { Sprite } from "@/components/Sprite";
+import {
+  AVATARS,
+  DIFFICULTY_ICON,
+  ICONS,
+  LOGO,
+  MOOD_LABEL,
+  type Avatar,
+  type BossArtId,
+  type Mood,
+} from "@/assets/registry";
 import { todayLocal } from "@/lib/date";
 import { describeReward } from "@/lib/rewards";
 import { DIFFICULTY_LABEL, type Quest } from "@/lib/types";
 import { usePersistentState } from "@/lib/usePersistentState";
 
 export default function Home() {
-  const [game, setGame, gameReady] = usePersistentState<GameState>(
+  // `ready` однаковий для всіх хуків, тому беремо його лише з першого
+  const [game, setGame, ready] = usePersistentState<GameState>(
     "questlog:v1:game",
     createGame,
   );
-  const [quests, setQuests, questsReady] = usePersistentState<Quest[]>(
+  const [quests, setQuests] = usePersistentState<Quest[]>(
     "questlog:v1:quests",
     () => [],
   );
-  const [boss, setBoss, bossReady] = usePersistentState<BossState | null>(
+  const [boss, setBoss] = usePersistentState<BossState | null>(
     "questlog:v1:boss",
     () => null,
   );
+  const [bossArt, setBossArt] = usePersistentState<BossArtId>(
+    "questlog:v1:bossArt",
+    () => "deadline_dragon",
+  );
+  const [avatar, setAvatar] = usePersistentState<Avatar>(
+    "questlog:v1:avatar",
+    () => "hero",
+  );
   // журнал нагород: кожен елемент це один виконаний квест
-  const [log, setLog, logReady] = usePersistentState<string[][]>(
+  const [log, setLog] = usePersistentState<string[][]>(
     "questlog:v2:log",
     () => [],
   );
+
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [happy, setHappy] = useState(false);
+  const happyTimer = useRef<number | undefined>(undefined);
 
-  if (!(gameReady && questsReady && bossReady && logReady)) return null;
+  if (!ready) return null;
 
   const { hero } = game;
   const need = xpToNextLevel(hero.level);
   const percent = Math.round((hero.xp / need) * 100);
+
+  const mood: Mood = happy
+    ? "happy"
+    : hero.lastActiveDate && hero.lastActiveDate !== todayLocal()
+      ? "tired"
+      : "idle";
+  const avatarDef = AVATARS[avatar];
 
   function addQuest() {
     const text = title.trim();
@@ -54,7 +85,11 @@ export default function Home() {
     setTitle("");
   }
 
-  function createBossWithQuests(bossTitle: string, drafts: QuestDraft[]) {
+  function createBossWithQuests(
+    bossTitle: string,
+    drafts: QuestDraft[],
+    art: BossArtId,
+  ) {
     const id = crypto.randomUUID();
     setBoss(
       createBoss(
@@ -63,6 +98,7 @@ export default function Home() {
         drafts.map((d) => d.difficulty),
       ),
     );
+    setBossArt(art);
     setQuests((qs) => [
       ...drafts.map((d) => ({
         id: crypto.randomUUID(),
@@ -95,6 +131,11 @@ export default function Home() {
       qs.map((q) => (q.id === quest.id ? { ...q, done: true } : q)),
     );
     setLog((l) => [res.rewards.map(describeReward), ...l].slice(0, 5));
+
+    // герой радіє пару секунд після виконання квесту
+    setHappy(true);
+    window.clearTimeout(happyTimer.current);
+    happyTimer.current = window.setTimeout(() => setHappy(false), 2500);
   }
 
   function reset() {
@@ -106,29 +147,64 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-8">
-      <h1 className="text-xl">Квест-лог</h1>
+      <header className="flex items-center gap-4">
+        <Sprite sprite={LOGO} />
+        <h1 className="text-xl">Квест-лог</h1>
+      </header>
 
-      <section className="pixel-panel flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-sm">Рівень {hero.level}</h2>
-          <span>🔥 Стрик: {hero.streak}</span>
+      <section className="pixel-panel flex items-end gap-4">
+        <Sprite
+          sprite={avatarDef.mood[mood]}
+          scale={3}
+          alt={`${avatarDef.label}, ${MOOD_LABEL[mood]}`}
+          className="shrink-0"
+        />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-sm">
+              <Sprite sprite={ICONS.xp} />
+              Рівень {hero.level}
+            </h2>
+            <span className="flex items-center gap-2">
+              <Sprite sprite={ICONS.streak} />
+              Стрик: {hero.streak}
+            </span>
+          </div>
+
+          <div
+            className="xp-bar"
+            role="progressbar"
+            aria-label="Досвід героя"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div className="xp-bar__fill" style={{ width: `${percent}%` }} />
+          </div>
+
+          <p className="text-base">
+            {hero.xp} / {need} XP · виконано квестів: {game.stats.totalQuests}
+          </p>
+
+          <div className="flex gap-2" role="group" aria-label="Вибір персонажа">
+            {(Object.keys(AVATARS) as Avatar[]).map((a) => (
+              <button
+                key={a}
+                className="pixel-btn"
+                aria-pressed={avatar === a}
+                onClick={() => setAvatar(a)}
+              >
+                {AVATARS[a].label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div
-          className="xp-bar"
-          role="progressbar"
-          aria-label="Досвід героя"
-          aria-valuenow={percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div className="xp-bar__fill" style={{ width: `${percent}%` }} />
-        </div>
-        <p className="text-base">
-          {hero.xp} / {need} XP · виконано квестів: {game.stats.totalQuests}
-        </p>
       </section>
 
-      {boss && <BossCard boss={boss} onDismiss={() => setBoss(null)} />}
+      {boss && (
+        <BossCard boss={boss} art={bossArt} onDismiss={() => setBoss(null)} />
+      )}
 
       {(!boss || boss.defeated) && (
         <NewBossForm onCreate={createBossWithQuests} />
@@ -169,11 +245,18 @@ export default function Home() {
             key={q.id}
             className="pixel-card flex items-center justify-between gap-3"
           >
-            <div className={q.done ? "line-through opacity-60" : ""}>
-              <div>{q.title}</div>
-              <div className="text-base opacity-70">
-                {DIFFICULTY_LABEL[q.difficulty]}
-                {q.bossId ? " · ⚔ бос" : ""}
+            <div
+              className={`flex items-center gap-3 ${
+                q.done ? "opacity-60" : ""
+              }`}
+            >
+              <Sprite sprite={DIFFICULTY_ICON[q.difficulty]} scale={2} />
+              <div className={q.done ? "line-through" : ""}>
+                <div>{q.title}</div>
+                <div className="text-base opacity-70">
+                  {DIFFICULTY_LABEL[q.difficulty]}
+                  {q.bossId ? " · ⚔ бос" : ""}
+                </div>
               </div>
             </div>
             <button
@@ -186,6 +269,8 @@ export default function Home() {
           </div>
         ))}
       </section>
+
+      <AchievementsPanel unlocked={game.stats.unlocked} />
 
       {log.length > 0 && (
         <section className="pixel-panel flex flex-col gap-3">

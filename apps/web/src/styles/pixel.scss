@@ -1,13 +1,15 @@
-// Палітра
+// Палітра: береться з palette.json набору ассетів
 $outline: #1a1330;
-$bg-deep: #150d2b;
+$bg-deep: #19102b; // колір неба bg_night.png
 $bg-panel: #241844;
-$card: #f3e6c4;
-$text-light: #f3e6c4;
-$xp-gold: #e8b030;
-$streak: #e8783a;
-$hp-coral: #ee6a55;
-$success: #7fcfa0;
+$card: #f4e5bc;
+$text-light: #f4e5bc;
+$xp-gold: #eeb430;
+$xp-gold-dark: #e99322;
+$streak: #e1813c;
+$hp-coral: #f26952;
+$hp-coral-dark: #bd3d40;
+$success: #83cf99;
 $muted: #7a5a8c;
 
 :root {
@@ -29,16 +31,33 @@ $muted: #7a5a8c;
 }
 
 body {
-  background: $bg-deep;
+  // фон на всю сторінку: cover, без повторення (за README набору ассетів)
+  background: $bg-deep url("/assets/backgrounds/bg_night.png") center / cover
+    fixed no-repeat;
   color: $text-light;
   font-family: var(--font-body), monospace;
   font-size: 18px;
   image-rendering: pixelated;
 }
 
-h1, h2, h3, .font-pixel {
+img {
+  image-rendering: pixelated;
+}
+
+h1,
+h2,
+h3,
+.font-pixel {
   font-family: var(--font-pixel), monospace;
   line-height: 1.5;
+}
+
+// Видимий фокус з клавіатури
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 4px solid $streak;
+  outline-offset: 2px;
 }
 
 .pixel-card {
@@ -73,6 +92,12 @@ h1, h2, h3, .font-pixel {
     cursor: default;
     opacity: 0.7;
   }
+
+  // перемикач: неактивний варіант приглушений
+  &[aria-pressed="false"] {
+    background: $muted;
+    color: $text-light;
+  }
 }
 
 .pixel-input {
@@ -91,14 +116,13 @@ h1, h2, h3, .font-pixel {
 
   &__fill {
     height: 100%;
-    background: repeating-linear-gradient(90deg, $xp-gold 0 8px, #f5cc5a 8px 16px);
+    background: repeating-linear-gradient(
+      90deg,
+      $xp-gold 0 8px,
+      $xp-gold-dark 8px 16px
+    );
     transition: width 0.4s steps(8);
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .xp-bar__fill { transition: none; }
-  .pixel-btn:hover:not(:disabled) { transform: none; }
 }
 
 .hp-bar {
@@ -108,11 +132,38 @@ h1, h2, h3, .font-pixel {
 
   &__fill {
     height: 100%;
-    background: repeating-linear-gradient(90deg, $hp-coral 0 8px, #f58a78 8px 16px);
+    background: repeating-linear-gradient(
+      90deg,
+      $hp-coral 0 8px,
+      $hp-coral-dark 8px 16px
+    );
     transition: width 0.4s steps(8);
   }
 }
 
+// Вибір вигляду боса у формі
+.boss-option {
+  background: transparent;
+  border: 4px solid transparent;
+  padding: 2px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: rgba($outline, 0.4);
+  }
+
+  &.is-selected {
+    border-color: $outline;
+    background: rgba($outline, 0.12);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hp-bar__fill { transition: none; }
+  .xp-bar__fill,
+  .hp-bar__fill {
+    transition: none;
+  }
+  .pixel-btn:hover:not(:disabled) {
+    transform: none;
+  }
 }
