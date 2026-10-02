@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBoss, hitBoss } from './boss';
+import { addQuestToBoss, createBoss, hitBoss } from './boss';
 
 describe('createBoss', () => {
   it('HP дорівнює сумі XP усіх квестів', () => {
@@ -56,5 +56,35 @@ describe('hitBoss', () => {
     const boss = Object.freeze(createBoss('b1', 'Дракон', ['hard']));
     expect(() => hitBoss(boss, 'hard')).not.toThrow();
     expect(boss.hp).toBe(60);
+  });
+});
+
+describe('addQuestToBoss', () => {
+  it('збільшує і HP, і максимум на XP квеста', () => {
+    const boss = createBoss('b1', 'Дракон', ['medium']); // 25
+    const after = addQuestToBoss(boss, 'hard'); // +60
+    expect(after.maxHp).toBe(85);
+    expect(after.hp).toBe(85);
+  });
+
+  it('зберігає вже завдану шкоду', () => {
+    const boss = createBoss('b1', 'Дракон', ['hard', 'medium']); // 85
+    const hit = hitBoss(boss, 'hard').boss; // hp 25
+    const after = addQuestToBoss(hit, 'easy'); // +10
+    expect(after.hp).toBe(35);
+    expect(after.maxHp).toBe(95);
+  });
+
+  it('кидає помилку для переможеного боса', () => {
+    const boss = createBoss('b1', 'Слиз', ['easy']);
+    const dead = hitBoss(boss, 'easy').boss;
+    expect(() => addQuestToBoss(dead, 'easy')).toThrow();
+  });
+
+  it('зберігає додаткові поля боса й не мутує вхідний стан', () => {
+    const boss = Object.freeze({ ...createBoss('b1', 'Дракон', ['easy']), art: 'dragon' });
+    const after = addQuestToBoss(boss, 'easy');
+    expect(after.art).toBe('dragon');
+    expect(boss.maxHp).toBe(10);
   });
 });

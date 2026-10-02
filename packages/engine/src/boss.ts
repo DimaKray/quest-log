@@ -35,3 +35,19 @@ export function hitBoss(
 
   return { boss: { ...boss, hp, defeated }, rewards };
 }
+
+/**
+ * Додає квест до наявного боса: HP і максимум зростають на XP квеста.
+ * Інваріант: hp боса = сума XP його невиконаних квестів.
+ * Переможений бос нових квестів не приймає.
+ */
+export function addQuestToBoss<T extends BossState>(
+  boss: T,
+  difficulty: Difficulty,
+): T {
+  if (boss.defeated) {
+    throw new Error('Cannot add a quest to a defeated boss');
+  }
+  const xp = XP_BY_DIFFICULTY[difficulty];
+  return { ...boss, maxHp: boss.maxHp + xp, hp: boss.hp + xp };
+}

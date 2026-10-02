@@ -36,7 +36,7 @@ body {
     fixed no-repeat;
   color: $text-light;
   font-family: var(--font-body), monospace;
-  font-size: 18px;
+  font-size: 16px;
   image-rendering: pixelated;
 }
 
@@ -138,6 +138,22 @@ select:focus-visible {
       $hp-coral-dark 8px 16px
     );
     transition: width 0.4s steps(8);
+  }
+}
+
+// Модальне вікно (нативний <dialog>)
+.pixel-dialog {
+  @include pixel-border;
+  background: $card;
+  color: $outline;
+  padding: 0;
+  margin: auto;
+  width: min(92vw, 680px);
+  max-height: 90vh;
+  overflow-y: auto;
+
+  &::backdrop {
+    background: rgba($bg-deep, 0.85);
   }
 }
 
