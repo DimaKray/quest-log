@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import "../styles/pixel.scss";
@@ -16,6 +16,14 @@ const body = IBM_Plex_Mono({
   subsets: ["latin", "cyrillic"],
   variable: "--font-body",
 });
+
+// viewport-fit=cover потрібен, щоб env(safe-area-inset-*) працював на iPhone
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#19102b",
+};
 
 export const metadata: Metadata = {
   title: "Квест-лог",

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { XP_BY_DIFFICULTY, type Difficulty } from "@questlog/engine";
 import { BOSSES, BOSS_IDS, type BossArtId } from "@/assets/registry";
+import { todayLocal } from "@/lib/date";
 import { DIFFICULTY_LABEL } from "@/lib/types";
+import { DatePicker } from "./DatePicker";
 import { Sprite } from "./Sprite";
 
 export interface QuestDraft {
@@ -17,11 +19,19 @@ const DEFAULT_ART: BossArtId = "deadline_dragon";
 export function NewBossForm({
   onCreate,
 }: {
-  onCreate: (title: string, drafts: QuestDraft[], art: BossArtId) => void;
+  onCreate: (
+    title: string,
+    drafts: QuestDraft[],
+    art: BossArtId,
+    deadline: string | null,
+  ) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [bossTitle, setBossTitle] = useState("");
   const [art, setArt] = useState<BossArtId>(DEFAULT_ART);
+  const [deadline, setDeadline] = useState("");
+  // змінюється при закритті діалогу, щоб календар теж скидався
+  const [session, setSession] = useState(0);
   const [drafts, setDrafts] = useState<QuestDraft[]>([]);
   const [qTitle, setQTitle] = useState("");
   const [qDiff, setQDiff] = useState<Difficulty>("medium");
@@ -51,6 +61,8 @@ export function NewBossForm({
     setOpen(false);
     setBossTitle("");
     setArt(DEFAULT_ART);
+    setDeadline("");
+    setSession((n) => n + 1);
     setDrafts([]);
     setQTitle("");
   }
@@ -58,7 +70,7 @@ export function NewBossForm({
   function submit() {
     const title = bossTitle.trim();
     if (!title || drafts.length === 0) return;
-    onCreate(title, drafts, art);
+    onCreate(title, drafts, art, deadline || null);
     close();
   }
 
@@ -111,7 +123,15 @@ export function NewBossForm({
               </button>
             ))}
           </div>
-          <p className="opacity-70">Обрано: {BOSSES[art].name}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="opacity-70">Обрано: {BOSSES[art].name}</p>
+            <DatePicker
+              key={session}
+              value={deadline}
+              onChange={setDeadline}
+              min={todayLocal()}
+            />
+          </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <input

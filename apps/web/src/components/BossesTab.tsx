@@ -17,7 +17,12 @@ export function BossesTab({
   bosses: Boss[];
   quests: Quest[];
   onFinish: (quest: Quest) => void;
-  onCreateBoss: (title: string, drafts: QuestDraft[], art: BossArtId) => void;
+  onCreateBoss: (
+    title: string,
+    drafts: QuestDraft[],
+    art: BossArtId,
+    deadline: string | null,
+  ) => void;
 }) {
   const today = todayLocal();
 

@@ -110,4 +110,11 @@ export const BADGES: Record<AchievementId, SpriteDef> = {
   level_10: s("badges/badge_laurel.png", 22, 22),
 };
 
+export const TAB_ICONS = {
+  quests: s("icons/ui/scroll.png", 28, 28),
+  bosses: s("icons/ui/skull.png", 28, 28),
+  hero: s("icons/ui/helmet.png", 28, 28),
+  archive: s("icons/chest.png", 22, 22),
+};
+
 export const LOGO = s("branding/logo_questlog.png", 86, 87);
