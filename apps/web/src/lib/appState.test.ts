@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { XP_BY_DIFFICULTY } from "@questlog/engine";
 import {
   activeBosses,
+  completedQuests,
+  defeatedBosses,
+  regularQuests,
   addQuest,
   createBossWithQuests,
   createInitialState,
@@ -319,5 +322,53 @@ describe("migrateLegacy", () => {
     migrateLegacy(read, NOW);
     expect(keys.length).toBeGreaterThan(0);
     expect(keys.every((k) => k.startsWith("questlog:v"))).toBe(true);
+  });
+});
+
+// ───────── вибірки для вкладок ─────────
+
+describe("вибірки", () => {
+  it("regularQuests віддає лише квести без боса", () => {
+    let s = withBoss(createInitialState(), "easy", "hard");
+    s = addQuest(s, { title: "чай", difficulty: "easy", bossId: null }, env());
+    expect(regularQuests(s).map((q) => q.title)).toEqual(["чай"]);
+  });
+
+  it("completedQuests: лише виконані, новіші першими, без часу в кінці", () => {
+    let s = createInitialState();
+    for (const title of ["a", "b", "c"]) {
+      s = addQuest(s, { title, difficulty: "easy", bossId: null }, env());
+    }
+    const byTitle = (t: string) => s.quests.find((q) => q.title === t)!.id;
+    s = finishQuest(s, byTitle("a"), env("2026-10-01")).state;
+    s = finishQuest(s, byTitle("c"), env("2026-10-03")).state;
+    // «b» активний, ще один виконаний «зі старої версії» без часу
+    s = {
+      ...s,
+      quests: [
+        ...s.quests,
+        { id: "old", title: "old", difficulty: "easy", bossId: null, done: true, completedAt: null },
+      ],
+    };
+    expect(completedQuests(s).map((q) => q.title)).toEqual(["c", "a", "old"]);
+  });
+
+  it("defeatedBosses: лише переможені, новіші першими", () => {
+    let s = withBoss(createInitialState(), "easy"); // бос 1
+    s = withBoss(s, "easy"); // бос 2
+    s = withBoss(s, "easy"); // бос 3 (лишається активним)
+    const questOf = (i: number) => s.quests.find((q) => q.bossId === s.bosses[i]!.id)!.id;
+    s = finishQuest(s, questOf(0), env("2026-10-01")).state;
+    s = finishQuest(s, questOf(1), env("2026-10-05")).state;
+    expect(defeatedBosses(s).map((b) => b.id)).toEqual([s.bosses[1]!.id, s.bosses[0]!.id]);
+    expect(activeBosses(s)).toHaveLength(1);
+  });
+
+  it("вибірки не мутують стан", () => {
+    let s = withBoss(createInitialState(), "easy");
+    s = finishQuest(s, s.quests[0]!.id, env()).state;
+    deepFreeze(s);
+    expect(() => completedQuests(s)).not.toThrow();
+    expect(() => defeatedBosses(s)).not.toThrow();
   });
 });

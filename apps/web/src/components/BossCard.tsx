@@ -1,24 +1,25 @@
 import { BOSSES, ICONS } from "@/assets/registry";
 import type { Boss } from "@/lib/appState";
-import { todayLocal } from "@/lib/date";
+import { formatDay, todayLocal } from "@/lib/date";
+import { HpBar } from "./HpBar";
 import { Sprite } from "./Sprite";
-
-/** 'YYYY-MM-DD' -> 'ДД.ММ.РРРР' */
-const formatDate = (iso: string) => iso.split("-").reverse().join(".");
 
 /**
  * Картка активного боса з перемикачем між босами.
  * Нічого не знає про розмітку: отримує список активних босів і id вибраного.
  * Якщо вибраного боса немає в списку (його переможено), показує першого.
+ * `compact`: для низьких екранів, спрайт збоку замість спрайта зверху.
  */
 export function BossCard({
   bosses,
   selectedId,
   onSelect,
+  compact = false,
 }: {
   bosses: Boss[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  compact?: boolean;
 }) {
   const first = bosses[0];
   if (!first) return null;
@@ -27,13 +28,34 @@ export function BossCard({
   const index = bosses.indexOf(boss);
   const count = bosses.length;
   const def = BOSSES[boss.art];
-  const percent = Math.round((boss.hp / boss.maxHp) * 100);
   const overdue = boss.deadline !== null && boss.deadline < todayLocal();
 
   function step(delta: number) {
     const target = bosses[(index + delta + count) % count];
     if (target) onSelect(target.id);
   }
+
+  const details = (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-x-3">
+        <span className="flex items-center gap-2">
+          <Sprite sprite={ICONS.heart} />
+          {boss.hp} / {boss.maxHp}
+        </span>
+        {boss.deadline && (
+          <span className={overdue ? "text-[var(--hp-coral)]" : "opacity-70"}>
+            до {formatDay(boss.deadline)}
+            {overdue ? " (прострочено)" : ""}
+          </span>
+        )}
+      </div>
+      <HpBar
+        hp={boss.hp}
+        maxHp={boss.maxHp}
+        label={`HP боса «${boss.title}»`}
+      />
+    </>
+  );
 
   return (
     <section className="pixel-panel flex flex-col gap-3">
@@ -62,36 +84,25 @@ export function BossCard({
         </nav>
       )}
 
-      <h2 className="text-sm break-words">{boss.title}</h2>
-
-      <div className="flex flex-col items-center gap-1">
-        <Sprite sprite={def.sprite} scale={3} alt={def.name} />
-        <p className="opacity-70">{def.name}</p>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex items-center gap-2">
-          <Sprite sprite={ICONS.heart} />
-          {boss.hp} / {boss.maxHp}
-        </span>
-        {boss.deadline && (
-          <span className={overdue ? "text-[var(--hp-coral)]" : "opacity-70"}>
-            до {formatDate(boss.deadline)}
-            {overdue ? " (прострочено)" : ""}
-          </span>
-        )}
-      </div>
-
-      <div
-        className="hp-bar"
-        role="progressbar"
-        aria-label={`HP боса «${boss.title}»`}
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div className="hp-bar__fill" style={{ width: `${percent}%` }} />
-      </div>
+      {compact ? (
+        <div className="flex items-center gap-3">
+          <Sprite sprite={def.sprite} alt={def.name} className="shrink-0" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <h2 className="text-sm break-words">{boss.title}</h2>
+            <p className="opacity-70">{def.name}</p>
+            {details}
+          </div>
+        </div>
+      ) : (
+        <>
+          <h2 className="text-sm break-words">{boss.title}</h2>
+          <div className="flex flex-col items-center gap-1">
+            <Sprite sprite={def.sprite} scale={2} alt={def.name} />
+            <p className="opacity-70">{def.name}</p>
+          </div>
+          {details}
+        </>
+      )}
     </section>
   );
 }

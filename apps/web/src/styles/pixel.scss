@@ -93,8 +93,10 @@ select:focus-visible {
     opacity: 0.7;
   }
 
-  // перемикач: неактивний варіант приглушений
-  &[aria-pressed="false"] {
+
+    // перемикач і вкладки: неактивний варіант приглушений
+  &[aria-pressed="false"],
+  &[aria-selected="false"] { 
     background: $muted;
     color: $text-light;
   }

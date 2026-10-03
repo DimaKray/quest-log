@@ -71,6 +71,29 @@ export function browserEnv(): Env {
 export const activeBosses = (state: AppState): Boss[] =>
   state.bosses.filter((b) => !b.defeated);
 
+
+/** Звичайні квести (не належать жодному босу). */
+export const regularQuests = (state: AppState): Quest[] =>
+  state.quests.filter((q) => q.bossId === null);
+
+/** Новіші першими; записи без часу (мігровані зі старої версії) в кінці. */
+const newestFirst = (a: string | null, b: string | null): number => {
+  const x = a ?? "";
+  const y = b ?? "";
+  return x === y ? 0 : x < y ? 1 : -1;
+};
+
+/** Усі виконані квести (звичайні й босові) для архіву. */
+export const completedQuests = (state: AppState): Quest[] =>
+  state.quests
+    .filter((q) => q.done)
+    .sort((a, b) => newestFirst(a.completedAt, b.completedAt));
+
+/** Переможені боси для архіву. */
+export const defeatedBosses = (state: AppState): Boss[] =>
+  state.bosses
+    .filter((b) => b.defeated)
+    .sort((a, b) => newestFirst(a.defeatedAt, b.defeatedAt));
 // ───────────────────────── дії ─────────────────────────
 
 export function addQuest(
