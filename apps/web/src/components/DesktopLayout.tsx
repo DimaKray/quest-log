@@ -21,6 +21,7 @@ export function DesktopLayout({
   boss,
   rewards,
   showLogo,
+  toolbar,
   onReset,
 }: {
   tab: ContentTab;
@@ -32,6 +33,8 @@ export function DesktopLayout({
   boss: ReactNode;
   rewards: ReactNode;
   showLogo: boolean;
+  /** кнопки в шапці (перемикач звуку) */
+  toolbar: ReactNode;
   onReset: () => void;
 }) {
   const tabs: TabDef<ContentTab>[] = [
@@ -48,9 +51,12 @@ export function DesktopLayout({
           {showLogo && <Sprite sprite={LOGO} />}
           <h1 className="text-xl">Квест-лог</h1>
         </div>
-        <button className="pixel-btn min-h-11 opacity-80" onClick={onReset}>
-          Скинути прогрес
-        </button>
+        <div className="flex items-center gap-3">
+          {toolbar}
+          <button className="pixel-btn min-h-11 opacity-80" onClick={onReset}>
+            Скинути прогрес
+          </button>
+        </div>
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_320px] grid-rows-[minmax(0,1fr)] gap-6">

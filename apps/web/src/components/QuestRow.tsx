@@ -39,7 +39,11 @@ export function QuestRow({
           ✓
         </span>
       ) : (
-        <button className="pixel-btn shrink-0" onClick={() => onFinish(quest)}>
+        <button
+          className="pixel-btn shrink-0"
+          data-sfx="off"
+          onClick={() => onFinish(quest)}
+        >
           Виконати
         </button>
       )}

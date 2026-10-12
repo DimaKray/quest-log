@@ -97,6 +97,8 @@ export const DIFFICULTY_ICON: Record<Difficulty, SpriteDef> = {
 };
 
 export const ICONS = {
+  soundOn: s("icons/ui/sound_on.png", 28, 28),
+  soundOff: s("icons/ui/sound_off.png", 28, 28),
   xp: s("icons/xp_star.png", 22, 22),
   heart: s("icons/heart.png", 22, 22),
   streak: s("icons/streak_flame.png", 22, 22),
@@ -110,11 +112,47 @@ export const BADGES: Record<AchievementId, SpriteDef> = {
   level_10: s("badges/badge_laurel.png", 22, 22),
 };
 
+/** Пози для манга-панелі бою. scale підібрано так, щоб герої були приблизно однакової висоти. */
+export const BATTLE = {
+  hero: {
+    attack: s("characters/hero/hero_attack.png", 52, 56),
+    victory: s("characters/hero/hero_victory.png", 52, 56),
+    scale: 3,
+  },
+  heroine: {
+    attack: s("characters/heroine/heroine_attack.png", 68, 73),
+    victory: s("characters/heroine/heroine_victory.png", 68, 73),
+    scale: 2,
+  },
+} satisfies Record<
+  Avatar,
+  { attack: SpriteDef; victory: SpriteDef; scale: number }
+>;
+
+export type Sky = "dawn" | "day" | "evening" | "night";
+
+/** Фони неба 99×99; у панелі показуємо з масштабом 2. */
+export const SKIES: Record<Sky, string> = {
+  dawn: "/assets/backgrounds/bg_dawn.png",
+  day: "/assets/backgrounds/bg_day.png",
+  evening: "/assets/backgrounds/bg_evening.png",
+  night: "/assets/backgrounds/bg_night.png",
+};
+
+/** Смуга землі 199×38; у панелі показуємо з масштабом 2. */
+export const GROUND = "/assets/environment/ground_strip.png";
+
 export const TAB_ICONS = {
   quests: s("icons/ui/scroll.png", 28, 28),
   bosses: s("icons/ui/skull.png", 28, 28),
   hero: s("icons/ui/helmet.png", 28, 28),
   archive: s("icons/chest.png", 22, 22),
+};
+
+/** Спрайти меча для курсора: звичайний і «вогняний» над кнопками. */
+export const CURSOR_SPRITES = {
+  normal: s("items/sword_bronze.png", 22, 22),
+  action: s("items/sword_fire.png", 22, 22),
 };
 
 export const LOGO = s("branding/logo_questlog.png", 86, 87);

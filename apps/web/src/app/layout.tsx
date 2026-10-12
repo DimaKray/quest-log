@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import "../styles/pixel.scss";
+import "../styles/battle.scss";
 
 // Заголовки, рівень, числа: піксельний шрифт
 const pixel = Press_Start_2P({

@@ -6,7 +6,7 @@ import { TabBar, type TabDef } from "./TabBar";
 /**
  * Мобільний: один екран за раз і нижня панель вкладок.
  * Прокручується лише сам екран (сторінка); панель закріплена знизу
- * й враховує safe-area. Вкладка «Герой» збирає героя, досягнення й нагороди.
+ * й враховує safe-area. Вкладка «Герой» (головна) збирає героя, досягнення й нагороди.
  */
 export function MobileLayout({
   tab,
@@ -16,6 +16,7 @@ export function MobileLayout({
   hero,
   achievements,
   rewards,
+  toolbar,
   onReset,
 }: {
   tab: TabId;
@@ -25,6 +26,8 @@ export function MobileLayout({
   hero: ReactNode;
   achievements: ReactNode;
   rewards: ReactNode;
+  /** кнопки поруч із заголовком (перемикач звуку) */
+  toolbar: ReactNode;
   onReset: () => void;
 }) {
   const tabs: TabDef<TabId>[] = [
@@ -52,7 +55,10 @@ export function MobileLayout({
   return (
     <>
       <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
-        <h1 className="text-xl">Квест-лог</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl">Квест-лог</h1>
+          {toolbar}
+        </div>
 
         <div
           role="tabpanel"

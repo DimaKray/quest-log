@@ -1,10 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Difficulty } from "@questlog/engine";
 import { AchievementsPanel } from "@/components/AchievementsPanel";
+import {
+  AchievementToasts,
+  type ToastEvent,
+} from "@/components/AchievementToasts";
 import { ArchiveTab } from "@/components/ArchiveTab";
 import { BossCard } from "@/components/BossCard";
+import { BattlePanel } from "@/components/BattlePanel";
 import { BossesTab } from "@/components/BossesTab";
 import { DesktopLayout } from "@/components/DesktopLayout";
 import { HeroPanel } from "@/components/HeroPanel";
@@ -12,7 +17,13 @@ import { MobileLayout } from "@/components/MobileLayout";
 import type { QuestDraft } from "@/components/NewBossForm";
 import { QuestForm } from "@/components/QuestForm";
 import { QuestList } from "@/components/QuestList";
+import {
+  RewardEffects,
+  type LevelUpEvent,
+  type XpFloat,
+} from "@/components/RewardEffects";
 import { RewardsPanel } from "@/components/RewardsPanel";
+import { SoundToggle } from "@/components/SoundToggle";
 import type { Avatar, BossArtId, Mood } from "@/assets/registry";
 import {
   STATE_KEY,
@@ -28,9 +39,25 @@ import {
   resetProgress,
   type AppState,
 } from "@/lib/appState";
+import { battleFromRewards, type BattleEvent } from "@/lib/battle";
 import { todayLocal } from "@/lib/date";
+import {
+  achievementsFromRewards,
+  summarizeRewards,
+  toastDelay,
+} from "@/lib/effects";
+import {
+  SETTINGS_KEY,
+  defaultSettings,
+  soundOn,
+  type Settings,
+} from "@/lib/settings";
+import { playSound, setSoundEnabled } from "@/lib/sound";
 import type { ContentTab, ContentView, TabId } from "@/lib/tabs";
 import type { Quest } from "@/lib/types";
+import { useClickOrigin } from "@/lib/useClickOrigin";
+import { useThemedCursor } from "@/lib/useThemedCursor";
+import { useUiSounds } from "@/lib/useUiSounds";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { usePersistentState } from "@/lib/usePersistentState";
 
@@ -49,6 +76,28 @@ export default function Home() {
   // який бос зараз показаний у картці (UI-стан, не зберігається)
   const [selectedBossId, setSelectedBossId] = useState<string | null>(null);
   const happyTimer = useRef<number | undefined>(undefined);
+  // поточний удар для манга-панелі; лічильник дає кожному удару новий id
+  const [battle, setBattle] = useState<BattleEvent | null>(null);
+  const battleCount = useRef(0);
+  // ефекти для звичайних квестів: вильоти +XP з кнопки та спалах нового рівня
+  const [floats, setFloats] = useState<XpFloat[]>([]);
+  const [levelUp, setLevelUp] = useState<LevelUpEvent | null>(null);
+  const fxCount = useRef(0);
+  const getOrigin = useClickOrigin();
+  // тости досягнень
+  const [toasts, setToasts] = useState<ToastEvent[]>([]);
+  const toastCount = useRef(0);
+  // налаштування окремо від прогресу: скидання прогресу їх не чіпає
+  const [settings, setSettings] = usePersistentState<Settings>(
+    SETTINGS_KEY,
+    defaultSettings,
+  );
+  const sound = soundOn(settings);
+  useEffect(() => {
+    setSoundEnabled(sound);
+  }, [sound]);
+  useUiSounds();
+  useThemedCursor();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   // на низьких екранах бічні колонки стискаємо, щоб вони не потребували скролу
   const roomy = useMediaQuery("(min-height: 820px)");
@@ -76,6 +125,7 @@ export default function Home() {
     bossId: string | null,
   ) {
     setApp(addQuest(app, { title, difficulty, bossId }, browserEnv()));
+    playSound("add");
     if (bossId) setSelectedBossId(bossId);
   }
 
@@ -91,6 +141,7 @@ export default function Home() {
       browserEnv(),
     );
     setApp(next);
+    playSound("add");
     // новий бос додається в кінець: одразу показуємо його
     const created = next.bosses[next.bosses.length - 1];
     if (created) setSelectedBossId(created.id);
@@ -100,15 +151,66 @@ export default function Home() {
     const res = finishQuest(app, quest.id, browserEnv());
     setApp(res.state);
 
+    // удар по босу: показуємо манга-панель (boss беремо до виконання квесту)
+    battleCount.current += 1;
+    const strike = battleFromRewards(
+      res.rewards,
+      app.bosses.find((b) => b.id === quest.bossId),
+      app.avatar,
+      battleCount.current,
+      new Date().getHours(),
+    );
+    const { xp, levelUp: newLevel } = summarizeRewards(res.rewards);
+    if (strike) {
+      // звуки удару грає сама манга-панель
+      setBattle(strike);
+    } else {
+      // звичайний квест: «монетка», число +XP з кнопки і, якщо вийшов новий рівень, спалах
+      playSound("complete");
+      fxCount.current += 1;
+      const id = fxCount.current;
+      if (xp > 0) {
+        const origin = getOrigin();
+        setFloats((list) => [
+          ...list,
+          { id, amount: xp, x: origin.x, y: origin.y },
+        ]);
+      }
+      if (newLevel !== null) setLevelUp({ id, level: newLevel });
+    }
+
+    // нові досягнення: тост після інших ефектів, щоб нічого не накрило
+    const unlocked = achievementsFromRewards(res.rewards);
+    if (unlocked.length > 0) {
+      const base = toastDelay({
+        boss: strike ? (strike.defeated ? "defeat" : "hit") : null,
+        levelUp: !strike && newLevel !== null,
+      });
+      const fresh = unlocked.map((achievement, i) => ({
+        id: (toastCount.current += 1),
+        achievement,
+        delay: base + i * 0.5,
+      }));
+      setToasts((list) => [...list, ...fresh]);
+    }
+
     // герой радіє пару секунд після виконання квесту
     setHappy(true);
     window.clearTimeout(happyTimer.current);
     happyTimer.current = window.setTimeout(() => setHappy(false), 2500);
   }
 
+  function handleToggleSound() {
+    const next = !sound;
+    setSettings({ sound: next });
+    setSoundEnabled(next);
+    if (next) playSound("click"); // відгук, що звук увімкнено
+  }
+
   function handleReset() {
     if (window.confirm("Скинути весь прогрес? Це не можна скасувати.")) {
       setApp(resetProgress(app));
+      playSound("reset");
     }
   }
 
@@ -166,45 +268,43 @@ export default function Home() {
     />
   );
   const achievements = <AchievementsPanel unlocked={game.stats.unlocked} />;
+  const toolbar = <SoundToggle enabled={sound} onToggle={handleToggleSound} />;
 
-  if (isDesktop) {
-    return (
-      <DesktopLayout
-        // «Герой» є лише на мобільному: на десктопі герой завжди ліворуч
-        tab={activeTab === "hero" ? "quests" : activeTab}
-        onTabChange={setTab}
-        counts={counts}
-        views={views}
-        hero={heroPanel}
-        achievements={achievements}
-        boss={
-          bosses.length > 0 ? (
-            <BossCard
-              bosses={bosses}
-              selectedId={selectedBossId}
-              onSelect={setSelectedBossId}
-              compact={!roomy}
-            />
-          ) : (
-            <section className="pixel-panel flex flex-col gap-3">
-              <p>Активних босів немає. Створи першого на вкладці «Боси».</p>
-              <button
-                className="pixel-btn min-h-11"
-                onClick={() => setTab("bosses")}
-              >
-                До босів
-              </button>
-            </section>
-          )
-        }
-        rewards={<RewardsPanel log={app.log} limit={roomy ? 3 : 2} />}
-        showLogo={roomy}
-        onReset={handleReset}
-      />
-    );
-  }
-
-  return (
+  const layout = isDesktop ? (
+    <DesktopLayout
+      // «Герой» є лише на мобільному: на десктопі герой завжди ліворуч
+      tab={activeTab === "hero" ? "quests" : activeTab}
+      onTabChange={setTab}
+      counts={counts}
+      views={views}
+      hero={heroPanel}
+      achievements={achievements}
+      boss={
+        bosses.length > 0 ? (
+          <BossCard
+            bosses={bosses}
+            selectedId={selectedBossId}
+            onSelect={setSelectedBossId}
+            compact={!roomy}
+          />
+        ) : (
+          <section className="pixel-panel flex flex-col gap-3">
+            <p>Активних босів немає. Створи першого на вкладці «Боси».</p>
+            <button
+              className="pixel-btn min-h-11"
+              onClick={() => setTab("bosses")}
+            >
+              До босів
+            </button>
+          </section>
+        )
+      }
+      rewards={<RewardsPanel log={app.log} limit={roomy ? 3 : 2} />}
+      showLogo={roomy}
+      toolbar={toolbar}
+      onReset={handleReset}
+    />
+  ) : (
     <MobileLayout
       tab={activeTab}
       onTabChange={setTab}
@@ -213,7 +313,27 @@ export default function Home() {
       hero={heroPanel}
       achievements={achievements}
       rewards={<RewardsPanel log={app.log} limit={5} />}
+      toolbar={toolbar}
       onReset={handleReset}
     />
+  );
+
+  return (
+    <>
+      {layout}
+      <BattlePanel event={battle} onDone={() => setBattle(null)} />
+      <RewardEffects
+        floats={floats}
+        levelUp={levelUp}
+        onFloatDone={(id) =>
+          setFloats((list) => list.filter((f) => f.id !== id))
+        }
+        onLevelUpDone={() => setLevelUp(null)}
+      />
+      <AchievementToasts
+        toasts={toasts}
+        onDone={(id) => setToasts((list) => list.filter((t) => t.id !== id))}
+      />
+    </>
   );
 }

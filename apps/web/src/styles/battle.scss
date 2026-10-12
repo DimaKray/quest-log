@@ -1,0 +1,401 @@
+// Манга-панель бою й піксельні смуги прокрутки.
+// Підключається в layout.tsx після pixel.scss. Кольори дублюють pixel.scss.
+$outline: #1a1330;
+$bg-deep: #19102b;
+$text-light: #f4e5bc;
+$xp-gold: #eeb430;
+$xp-gold-dark: #e99322;
+$xp-gold-light: #f8cd62;
+$streak: #e1813c;
+$streak-light: #eb9d62;
+$streak-dark: #b9601f;
+$hp-coral: #f26952;
+
+// Контур навколо тексту (для підписів на картинках)
+@mixin text-outline($color: $outline, $w: 3px) {
+  text-shadow:
+    -#{$w} -#{$w} 0 $color,
+    $w -#{$w} 0 $color,
+    -#{$w} $w 0 $color,
+    $w $w 0 $color,
+    0 $w 0 $color,
+    0 -#{$w} 0 $color,
+    $w 0 0 $color,
+    -#{$w} 0 0 $color;
+}
+
+// Піксельні смуги прокрутки (WebKit/Blink)
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: $bg-deep;
+  box-shadow: inset 0 0 0 4px $outline;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $xp-gold;
+  border: 4px solid $outline;
+  box-shadow:
+    inset -4px -4px 0 $xp-gold-dark,
+    inset 4px 4px 0 $xp-gold-light;
+
+  &:hover {
+    background: $streak;
+    box-shadow:
+      inset -4px -4px 0 $streak-dark,
+      inset 4px 4px 0 $streak-light;
+  }
+
+  &:active {
+    background: $xp-gold-dark;
+  }
+}
+
+::-webkit-scrollbar-corner {
+  background: $bg-deep;
+}
+
+// Firefox не вміє піксельні пальці, тому лише кольори. У Chrome ці властивості
+// вимкнули б стилі вище, тому вмикаємо їх тільки там, де немає ::-webkit-scrollbar.
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: $xp-gold $bg-deep;
+  }
+}
+
+// Манга-панель бою (позиціонується й масштабується з BattlePanel)
+.battle {
+  &__fit {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    width: 360px;
+    pointer-events: none;
+    transform-origin: top left;
+  }
+
+  // drop-shadow, бо box-shadow не працює з clip-path
+  &__wrap {
+    visibility: hidden;
+    filter: drop-shadow(6px 6px 0 $outline);
+  }
+
+  // чорна нахилена рамка, як у манзі
+  &__frame {
+    position: relative;
+    height: 300px;
+    background: $outline;
+    clip-path: polygon(0 4%, 100% 0, 99% 96%, 1% 100%);
+  }
+
+  &__scene {
+    position: absolute;
+    inset: 6px;
+    overflow: hidden;
+    background-color: $bg-deep;
+    background-size: 198px 198px; // 99px × 2
+    image-rendering: pixelated;
+    clip-path: polygon(0 4%, 100% 0, 99% 96%, 1% 100%);
+  }
+
+  &__ground {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 76px;
+    background: url("/assets/environment/ground_strip.png") repeat-x left top / auto 76px; // 38px × 2
+    image-rendering: pixelated;
+  }
+
+  &__hero,
+  &__boss {
+    position: absolute;
+    bottom: 62px;
+    line-height: 0;
+  }
+
+  &__hero {
+    left: 6px;
+  }
+
+  &__boss {
+    right: 6px;
+  }
+
+  // перемога лежить поверх атаки, показується замість неї
+  &__victory {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+
+  &__lines {
+    position: absolute;
+    inset: 0;
+    transform-origin: 200px 136px;
+    fill: rgba(255, 255, 255, 0.55);
+  }
+
+  &__burst {
+    position: absolute;
+    top: 61px;
+    left: 125px;
+    fill: #fff3b0;
+    stroke: $outline;
+    stroke-width: 5;
+    stroke-linejoin: miter;
+  }
+
+  &__flash {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+  }
+
+  &__sfx,
+  &__damage,
+  &__level {
+    position: absolute;
+    font-family: var(--font-pixel), monospace;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  &__sfx {
+    top: 10px;
+    left: 70px;
+    font-size: 28px;
+    color: #fff3b0;
+    @include text-outline($outline, 4px);
+  }
+
+  &__damage {
+    top: 86px;
+    right: 40px;
+    font-size: 30px;
+    color: $hp-coral;
+    @include text-outline($outline, 3px);
+  }
+
+  &__level {
+    top: 46px;
+    left: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+    color: $outline;
+    background: $xp-gold;
+    border: 3px solid $outline;
+  }
+
+  &__hud {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 8px;
+    color: $text-light;
+    background: rgba($outline, 0.9);
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__hp {
+    height: 10px;
+    background: $bg-deep;
+    border: 2px solid $text-light;
+  }
+
+  &__hp-fill {
+    height: 100%;
+    background: $hp-coral;
+  }
+}
+
+
+// Затемнення фону за манга-панеллю
+.battle__dim {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  pointer-events: none;
+  background: rgba(10, 6, 24, 0.6);
+  visibility: hidden;
+}
+
+// Виліт «+XP» над кнопкою (анімується внутрішній span)
+.fx-xp {
+  position: fixed;
+  z-index: 70;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+
+  span {
+    display: block;
+    font-family: var(--font-pixel), monospace;
+    font-size: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    color: $xp-gold;
+    visibility: hidden;
+    @include text-outline($outline, 3px);
+  }
+}
+
+// Спалах і банер нового рівня
+.fx-level {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  pointer-events: none;
+
+  &__flash {
+    position: absolute;
+    inset: 0;
+    background: #ffe38a;
+    opacity: 0;
+  }
+
+  // сцена фіксованого розміру по центру, усередині все центрується через auto-відступи
+  &__stage {
+    position: absolute;
+    top: 32%;
+    left: 50%;
+    width: min(92vw, 420px);
+    height: 240px;
+    margin-left: calc(min(92vw, 420px) / -2);
+    margin-top: -120px;
+  }
+
+  &__burst {
+    position: absolute;
+    inset: 0;
+    width: 240px;
+    height: 240px;
+    margin: auto;
+    fill: #fff3b0;
+    stroke: $outline;
+    stroke-width: 5;
+  }
+
+  &__star {
+    position: absolute;
+    inset: 0;
+    width: 44px;
+    height: 44px;
+    margin: auto;
+  }
+
+  &__banner {
+    position: absolute;
+    inset: 0;
+    width: max-content;
+    max-width: 92vw;
+    height: fit-content;
+    margin: auto;
+    padding: 10px 18px;
+    font-family: var(--font-pixel), monospace;
+    font-size: clamp(22px, 6vw, 38px);
+    line-height: 1.2;
+    white-space: nowrap;
+    color: $outline;
+    background: $xp-gold;
+    border: 5px solid $outline;
+    box-shadow: 6px 6px 0 $outline;
+  }
+}
+
+// Тост нового досягнення
+$card: #f4e5bc;
+$streak-dark-toast: #b9601f;
+
+.toast-stack {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 0;
+  left: 0;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(92vw, 420px);
+  padding: 10px 14px;
+  color: $outline;
+  background: $card;
+  border: 4px solid $outline;
+  box-shadow: 4px 4px 0 $outline;
+  visibility: hidden;
+
+  &__badge {
+    flex: none;
+    line-height: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-family: var(--font-pixel), monospace;
+    font-size: 10px;
+    color: $streak-dark-toast;
+  }
+
+  &__title {
+    font-family: var(--font-pixel), monospace;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  &__desc {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+}
+
+// Тематичний курсор: меч, а над кнопками вогняний меч.
+// Значення виставляє useThemedCursor; без нього лишається стандартний курсор.
+html {
+  cursor: var(--cursor-default, auto);
+}
+
+a[href],
+button:not(:disabled),
+[role="tab"],
+[role="radio"],
+select,
+summary,
+label[for] {
+  cursor: var(--cursor-pointer, pointer);
+}
+
+input[type="text"],
+input:not([type]),
+textarea {
+  cursor: text;
+}
